@@ -878,7 +878,7 @@
           id: currentSessionId,
           title: currentTitle,
           updatedAt: Date.now(),
-          messages: cloneMessages(messages)
+          messages
         };
 
         await putSession(session);
@@ -955,7 +955,7 @@
 
         currentSessionId = session.id;
         currentTitle = session.title || "未命名会话";
-        messages = cloneMessages(session.messages || []);
+        messages = [...(session.messages || [])];
         pendingImages = [];
         promptInput.value = "";
         renderPendingImages();
@@ -1127,7 +1127,7 @@
       }
 
       function buildRequestMessages(systemPrompt) {
-        const requestMessages = cloneMessages(messages);
+        const requestMessages = [...messages];
         const prompt = (systemPrompt || "").trim();
         if (prompt) {
           requestMessages.unshift({
@@ -1427,10 +1427,6 @@
         const text = firstUser ? parseMessageContent(firstUser.content).text : "";
         const compact = text.replace(/\s+/g, " ").trim();
         return compact ? compact.slice(0, 15) : "图片对话";
-      }
-
-      function cloneMessages(value) {
-        return JSON.parse(JSON.stringify(value));
       }
 
       function createId() {
