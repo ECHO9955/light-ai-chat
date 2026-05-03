@@ -408,7 +408,7 @@
     }
 
     .field input,
-    .field select {
+    .select-trigger {
       width: 100%;
       height: 38px;
       border: 1px solid var(--line);
@@ -417,6 +417,69 @@
       background: var(--input-bg);
       color: var(--text);
       outline: none;
+    }
+
+    .custom-select {
+      position: relative;
+    }
+
+    .select-trigger {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      padding-right: 32px;
+    }
+
+    .select-trigger::after {
+      content: "▾";
+      position: absolute;
+      right: 11px;
+      color: var(--muted);
+      font-size: 12px;
+      pointer-events: none;
+      transition: transform 0.15s ease;
+    }
+
+    .custom-select.open .select-trigger::after {
+      transform: rotate(180deg);
+    }
+
+    .select-dropdown {
+      position: absolute;
+      z-index: 100;
+      top: 100%;
+      left: 0;
+      right: 0;
+      display: none;
+      margin-top: 4px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .custom-select.open .select-dropdown {
+      display: block;
+    }
+
+    .select-option {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .select-option:hover,
+    .select-option.active {
+      background: var(--control-hover-bg);
     }
 
     .secret-row {
@@ -454,7 +517,7 @@
     }
 
     .field input:focus,
-    .field select:focus {
+    .select-trigger:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--focus-ring);
     }
@@ -915,12 +978,19 @@
           </div>
           <div class="field">
             <label for="reasoningEffort">reasoning_effort（推理深度）</label>
-            <select id="reasoningEffort">
-              <option value="">默认</option>
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
-            </select>
+            <div id="reasoningEffortSelect" class="custom-select">
+              <button id="reasoningEffortTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">默认</button>
+              <input id="reasoningEffort" type="hidden" value="">
+              <div class="select-dropdown" role="listbox">
+                <button class="select-option active" type="button" data-value="">默认</button>
+                <button class="select-option" type="button" data-value="none">none</button>
+                <button class="select-option" type="button" data-value="minimal">minimal</button>
+                <button class="select-option" type="button" data-value="low">low</button>
+                <button class="select-option" type="button" data-value="medium">medium</button>
+                <button class="select-option" type="button" data-value="high">high</button>
+                <button class="select-option" type="button" data-value="xhigh">xhigh</button>
+              </div>
+            </div>
           </div>
           <div class="field full">
             <label for="systemPrompt">全局提示词</label>
@@ -961,6 +1031,7 @@
       const THEME_KEY = "light_ai_chat_theme";
       const HIGHLIGHT_LIGHT_THEME = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css";
       const HIGHLIGHT_DARK_THEME = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css";
+      const REASONING_EFFORT_VALUES = ["none", "minimal", "low", "medium", "high", "xhigh"];
 
       const app = document.getElementById("app");
       const highlightTheme = document.getElementById("highlightTheme");
@@ -979,6 +1050,8 @@
       const topPInput = document.getElementById("topP");
       const maxTokensInput = document.getElementById("maxTokens");
       const maxCompletionTokensInput = document.getElementById("maxCompletionTokens");
+      const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
+      const reasoningEffortTrigger = document.getElementById("reasoningEffortTrigger");
       const reasoningEffortInput = document.getElementById("reasoningEffort");
       const systemPromptInput = document.getElementById("systemPrompt");
       const chatTitle = document.getElementById("chatTitle");
@@ -1026,6 +1099,17 @@
         themeToggle.addEventListener("click", toggleTheme);
         configToggle.addEventListener("click", () => configPanel.classList.toggle("open"));
         apiKeyToggle.addEventListener("click", toggleApiKeyVisibility);
+        reasoningEffortTrigger.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleCustomSelect(reasoningEffortSelect);
+        });
+        reasoningEffortSelect.querySelectorAll(".select-option").forEach((option) => {
+          option.addEventListener("click", (event) => {
+            event.stopPropagation();
+            setReasoningEffortValue(option.dataset.value || "", true);
+            closeCustomSelect(reasoningEffortSelect);
+          });
+        });
         fileBtn.addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", async () => {
           await handleFiles(fileInput.files);
@@ -1096,7 +1180,45 @@
               actions.classList.remove("show-confirm");
             }
           });
+
+          if (!event.target.closest || !event.target.closest(".custom-select")) {
+            closeAllCustomSelects();
+          }
         });
+      }
+
+      function toggleCustomSelect(select) {
+        const willOpen = !select.classList.contains("open");
+        closeAllCustomSelects();
+        select.classList.toggle("open", willOpen);
+        select.querySelector(".select-trigger").setAttribute("aria-expanded", String(willOpen));
+      }
+
+      function closeCustomSelect(select) {
+        select.classList.remove("open");
+        select.querySelector(".select-trigger").setAttribute("aria-expanded", "false");
+      }
+
+      function closeAllCustomSelects() {
+        document.querySelectorAll(".custom-select.open").forEach(closeCustomSelect);
+      }
+
+      function setReasoningEffortValue(value, dispatchChange) {
+        const normalizedValue = REASONING_EFFORT_VALUES.includes(value) ? value : "";
+        reasoningEffortInput.value = normalizedValue;
+        reasoningEffortTrigger.textContent = getReasoningEffortLabel(normalizedValue);
+        reasoningEffortSelect.querySelectorAll(".select-option").forEach((option) => {
+          option.classList.toggle("active", (option.dataset.value || "") === normalizedValue);
+        });
+
+        if (dispatchChange) {
+          reasoningEffortInput.dispatchEvent(new Event("input", { bubbles: true }));
+          reasoningEffortInput.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+
+      function getReasoningEffortLabel(value) {
+        return value || "默认";
       }
 
       function applyInitialTheme() {
@@ -1141,7 +1263,7 @@
           topPInput.value = saved.topP || "";
           maxTokensInput.value = saved.maxTokens || "";
           maxCompletionTokensInput.value = saved.maxCompletionTokens || "";
-          reasoningEffortInput.value = saved.reasoningEffort || "";
+          setReasoningEffortValue(saved.reasoningEffort || "", false);
           systemPromptInput.value = saved.systemPrompt || "";
         } catch {
           baseUrlInput.value = "https://api.openai.com";
@@ -1150,7 +1272,7 @@
           topPInput.value = "";
           maxTokensInput.value = "";
           maxCompletionTokensInput.value = "";
-          reasoningEffortInput.value = "";
+          setReasoningEffortValue("", false);
           systemPromptInput.value = "";
         }
       }
