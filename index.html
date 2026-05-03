@@ -258,6 +258,19 @@
       outline: none;
     }
 
+    .secret-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 58px;
+      gap: 8px;
+    }
+
+    .secret-toggle {
+      height: 38px;
+      padding: 0 10px;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
     .field.full {
       grid-column: 1 / -1;
     }
@@ -636,7 +649,10 @@
           </div>
           <div class="field">
             <label for="apiKey">API Key</label>
-            <input id="apiKey" type="password" autocomplete="off" placeholder="sk-...">
+            <div class="secret-row">
+              <input id="apiKey" type="password" autocomplete="off" placeholder="sk-...">
+              <button id="apiKeyToggle" class="secret-toggle" type="button">显示</button>
+            </div>
           </div>
           <div class="field">
             <label for="modelName">模型名称</label>
@@ -688,6 +704,7 @@
       const configPanel = document.getElementById("configPanel");
       const baseUrlInput = document.getElementById("baseUrl");
       const apiKeyInput = document.getElementById("apiKey");
+      const apiKeyToggle = document.getElementById("apiKeyToggle");
       const modelNameInput = document.getElementById("modelName");
       const systemPromptInput = document.getElementById("systemPrompt");
       const chatTitle = document.getElementById("chatTitle");
@@ -731,6 +748,7 @@
         collapseBtn.addEventListener("click", () => app.classList.add("sidebar-collapsed"));
         showSidebarBtn.addEventListener("click", () => app.classList.toggle("sidebar-collapsed"));
         configToggle.addEventListener("click", () => configPanel.classList.toggle("open"));
+        apiKeyToggle.addEventListener("click", toggleApiKeyVisibility);
         fileBtn.addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", async () => {
           await handleFiles(fileInput.files);
@@ -794,6 +812,12 @@
           systemPrompt: systemPromptInput.value
         };
         localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+      }
+
+      function toggleApiKeyVisibility() {
+        const shouldShow = apiKeyInput.type === "password";
+        apiKeyInput.type = shouldShow ? "text" : "password";
+        apiKeyToggle.textContent = shouldShow ? "隐藏" : "显示";
       }
 
       function openDb() {
