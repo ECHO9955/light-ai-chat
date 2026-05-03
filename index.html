@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>轻量 AI 对话</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css" media="(prefers-color-scheme: light)">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
+  <link id="highlightTheme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
   <style>
     :root {
       color-scheme: light dark;
@@ -50,7 +49,8 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
+        color-scheme: dark;
         --bg: #0f1115;
         --panel: #171a21;
         --panel-soft: #20242c;
@@ -91,6 +91,51 @@
       }
     }
 
+    html[data-theme="light"] {
+      color-scheme: light;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-soft: #20242c;
+      --text: #e8ecf1;
+      --muted: #9aa4b2;
+      --line: #2b313a;
+      --accent: #4fc3a1;
+      --accent-dark: #36a685;
+      --accent-text: #06120f;
+      --danger: #ff6b5f;
+      --shadow: 0 18px 55px rgba(0, 0, 0, 0.42);
+      --control-bg: #1a1e25;
+      --control-hover-bg: #232832;
+      --control-hover-border: #3b4654;
+      --sidebar-bg: #141820;
+      --history-hover-bg: #202631;
+      --history-active-bg: #17362f;
+      --history-active-border: #2f7e67;
+      --topbar-bg: rgba(19, 22, 29, 0.9);
+      --composer-wrap-bg: rgba(19, 22, 29, 0.92);
+      --input-bg: #11141a;
+      --focus-ring: rgba(79, 195, 161, 0.2);
+      --drag-ring: rgba(79, 195, 161, 0.24);
+      --assistant-dot: #8ea2ff;
+      --user-message-bg: #12362e;
+      --user-message-border: #2b8069;
+      --error-message-bg: #351818;
+      --error-message-border: #7d2f2a;
+      --error-message-text: #ffb4ad;
+      --message-action-bg: rgba(26, 30, 37, 0.9);
+      --code-bg: #0d1117;
+      --code-border: #30363d;
+      --inline-code-bg: #242a32;
+      --quote-border: #52606f;
+      --quote-text: #c3cbd6;
+      --image-bg: #11141a;
+      --mobile-sidebar-shadow: 20px 0 55px rgba(0, 0, 0, 0.44);
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -109,6 +154,7 @@
 
     button,
     input,
+    select,
     textarea {
       font: inherit;
     }
@@ -257,7 +303,7 @@
 
     .topbar {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
       gap: 12px;
       align-items: center;
       padding: 12px 18px;
@@ -294,12 +340,21 @@
       white-space: nowrap;
     }
 
+    .theme-toggle {
+      height: 38px;
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+
     .config {
       display: none;
       grid-column: 1 / -1;
-      grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(150px, 220px);
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px 12px;
+      max-height: 75vh;
+      overflow-y: auto;
       padding-top: 10px;
+      padding-right: 4px;
     }
 
     .config.open {
@@ -317,7 +372,8 @@
       font-size: 12px;
     }
 
-    .field input {
+    .field input,
+    .field select {
       width: 100%;
       height: 38px;
       border: 1px solid var(--line);
@@ -345,9 +401,13 @@
       grid-column: 1 / -1;
     }
 
+    .field.new-row {
+      grid-column-start: 1;
+    }
+
     .field textarea {
       width: 100%;
-      min-height: 86px;
+      min-height: 140px;
       resize: vertical;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -358,7 +418,8 @@
       outline: none;
     }
 
-    .field input:focus {
+    .field input:focus,
+    .field select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--focus-ring);
     }
@@ -741,12 +802,13 @@
       }
 
       .topbar {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
         padding: 10px 12px;
       }
 
       .config {
         grid-template-columns: minmax(0, 1fr);
+        max-height: 75vh;
       }
 
       .chat {
@@ -782,6 +844,7 @@
           <h1 id="chatTitle" class="app-title">新对话</h1>
           <div id="status" class="status">配置 Base URL、API Key 和模型后开始对话</div>
         </div>
+        <button id="themeToggle" class="theme-toggle" type="button" title="切换主题" aria-label="切换主题">主题</button>
         <button id="configToggle" class="config-toggle" type="button">配置</button>
         <section id="configPanel" class="config" aria-label="接口配置">
           <div class="field">
@@ -798,6 +861,31 @@
           <div class="field">
             <label for="modelName">模型名称</label>
             <input id="modelName" type="text" placeholder="gpt-4o-mini">
+          </div>
+          <div class="field new-row">
+            <label for="temperature">temperature（温度）</label>
+            <input id="temperature" type="number" min="0" max="2" step="0.1" placeholder="默认">
+          </div>
+          <div class="field">
+            <label for="topP">top_p（核采样）</label>
+            <input id="topP" type="number" min="0" max="1" step="0.01" placeholder="默认">
+          </div>
+          <div class="field">
+            <label for="maxTokens">max_tokens</label>
+            <input id="maxTokens" type="number" min="1" step="1" placeholder="不限制">
+          </div>
+          <div class="field">
+            <label for="maxCompletionTokens">max_completion_tokens</label>
+            <input id="maxCompletionTokens" type="number" min="1" step="1" placeholder="不限制">
+          </div>
+          <div class="field">
+            <label for="reasoningEffort">reasoning_effort（推理深度）</label>
+            <select id="reasoningEffort">
+              <option value="">默认</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
           </div>
           <div class="field full">
             <label for="systemPrompt">全局提示词</label>
@@ -835,18 +923,28 @@
       const DB_VERSION = 1;
       const STORE_NAME = "sessions";
       const CONFIG_KEY = "light_ai_chat_config";
+      const THEME_KEY = "light_ai_chat_theme";
+      const HIGHLIGHT_LIGHT_THEME = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css";
+      const HIGHLIGHT_DARK_THEME = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css";
 
       const app = document.getElementById("app");
+      const highlightTheme = document.getElementById("highlightTheme");
       const historyList = document.getElementById("historyList");
       const newChatBtn = document.getElementById("newChatBtn");
       const collapseBtn = document.getElementById("collapseBtn");
       const showSidebarBtn = document.getElementById("showSidebarBtn");
+      const themeToggle = document.getElementById("themeToggle");
       const configToggle = document.getElementById("configToggle");
       const configPanel = document.getElementById("configPanel");
       const baseUrlInput = document.getElementById("baseUrl");
       const apiKeyInput = document.getElementById("apiKey");
       const apiKeyToggle = document.getElementById("apiKeyToggle");
       const modelNameInput = document.getElementById("modelName");
+      const temperatureInput = document.getElementById("temperature");
+      const topPInput = document.getElementById("topP");
+      const maxTokensInput = document.getElementById("maxTokens");
+      const maxCompletionTokensInput = document.getElementById("maxCompletionTokens");
+      const reasoningEffortInput = document.getElementById("reasoningEffort");
       const systemPromptInput = document.getElementById("systemPrompt");
       const chatTitle = document.getElementById("chatTitle");
       const statusEl = document.getElementById("status");
@@ -865,6 +963,7 @@
       let messages = [];
       let pendingImages = [];
       let isSending = false;
+      const systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
       marked.setOptions({
         gfm: true,
@@ -877,6 +976,7 @@
       });
 
       async function init() {
+        applyInitialTheme();
         loadConfig();
         bindEvents();
         db = await openDb();
@@ -888,6 +988,7 @@
         newChatBtn.addEventListener("click", startNewChat);
         collapseBtn.addEventListener("click", () => app.classList.add("sidebar-collapsed"));
         showSidebarBtn.addEventListener("click", () => app.classList.toggle("sidebar-collapsed"));
+        themeToggle.addEventListener("click", toggleTheme);
         configToggle.addEventListener("click", () => configPanel.classList.toggle("open"));
         apiKeyToggle.addEventListener("click", toggleApiKeyVisibility);
         fileBtn.addEventListener("click", () => fileInput.click());
@@ -896,8 +997,19 @@
           fileInput.value = "";
         });
 
-        [baseUrlInput, apiKeyInput, modelNameInput, systemPromptInput].forEach((input) => {
+        [
+          baseUrlInput,
+          apiKeyInput,
+          modelNameInput,
+          temperatureInput,
+          topPInput,
+          maxTokensInput,
+          maxCompletionTokensInput,
+          reasoningEffortInput,
+          systemPromptInput
+        ].forEach((input) => {
           input.addEventListener("input", saveConfig);
+          input.addEventListener("change", saveConfig);
         });
 
         promptInput.addEventListener("input", autoResizeTextarea);
@@ -929,6 +1041,50 @@
             composer.classList.remove("dragging");
           });
         });
+
+        const handleSystemThemeChange = () => {
+          if (!getStoredTheme()) {
+            applyTheme(getSystemTheme(), false);
+          }
+        };
+
+        if (systemThemeQuery.addEventListener) {
+          systemThemeQuery.addEventListener("change", handleSystemThemeChange);
+        } else if (systemThemeQuery.addListener) {
+          systemThemeQuery.addListener(handleSystemThemeChange);
+        }
+      }
+
+      function applyInitialTheme() {
+        const storedTheme = getStoredTheme();
+        applyTheme(storedTheme || getSystemTheme(), false);
+      }
+
+      function toggleTheme() {
+        const currentTheme = document.documentElement.dataset.theme || getSystemTheme();
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        applyTheme(nextTheme, true);
+      }
+
+      function applyTheme(theme, persist) {
+        const normalizedTheme = theme === "dark" ? "dark" : "light";
+        document.documentElement.dataset.theme = normalizedTheme;
+        highlightTheme.href = normalizedTheme === "dark" ? HIGHLIGHT_DARK_THEME : HIGHLIGHT_LIGHT_THEME;
+        themeToggle.textContent = normalizedTheme === "dark" ? "深色" : "浅色";
+        themeToggle.title = "切换主题，当前为" + (normalizedTheme === "dark" ? "深色" : "浅色");
+
+        if (persist) {
+          localStorage.setItem(THEME_KEY, normalizedTheme);
+        }
+      }
+
+      function getStoredTheme() {
+        const value = localStorage.getItem(THEME_KEY);
+        return value === "dark" || value === "light" ? value : "";
+      }
+
+      function getSystemTheme() {
+        return systemThemeQuery.matches ? "dark" : "light";
       }
 
       function loadConfig() {
@@ -937,10 +1093,20 @@
           baseUrlInput.value = saved.baseUrl || "https://api.openai.com";
           apiKeyInput.value = saved.apiKey || "";
           modelNameInput.value = saved.model || "gpt-4o-mini";
+          temperatureInput.value = saved.temperature || "";
+          topPInput.value = saved.topP || "";
+          maxTokensInput.value = saved.maxTokens || "";
+          maxCompletionTokensInput.value = saved.maxCompletionTokens || "";
+          reasoningEffortInput.value = saved.reasoningEffort || "";
           systemPromptInput.value = saved.systemPrompt || "";
         } catch {
           baseUrlInput.value = "https://api.openai.com";
           modelNameInput.value = "gpt-4o-mini";
+          temperatureInput.value = "";
+          topPInput.value = "";
+          maxTokensInput.value = "";
+          maxCompletionTokensInput.value = "";
+          reasoningEffortInput.value = "";
           systemPromptInput.value = "";
         }
       }
@@ -950,6 +1116,11 @@
           baseUrl: baseUrlInput.value.trim(),
           apiKey: apiKeyInput.value.trim(),
           model: modelNameInput.value.trim(),
+          temperature: temperatureInput.value.trim(),
+          topP: topPInput.value.trim(),
+          maxTokens: maxTokensInput.value.trim(),
+          maxCompletionTokens: maxCompletionTokensInput.value.trim(),
+          reasoningEffort: reasoningEffortInput.value,
           systemPrompt: systemPromptInput.value
         };
         localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -1177,6 +1348,11 @@
           baseUrl: baseUrlInput.value.trim(),
           apiKey: apiKeyInput.value.trim(),
           model: modelNameInput.value.trim(),
+          temperature: temperatureInput.value.trim(),
+          topP: topPInput.value.trim(),
+          maxTokens: maxTokensInput.value.trim(),
+          maxCompletionTokens: maxCompletionTokensInput.value.trim(),
+          reasoningEffort: reasoningEffortInput.value,
           systemPrompt: systemPromptInput.value
         };
       }
@@ -1204,20 +1380,62 @@
       }
 
       async function requestChatCompletion(config) {
+        const payload = buildRequestPayload(config);
         const data = await fetchJsonWithRetry(makeEndpoint(config.baseUrl), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + config.apiKey
           },
-          body: JSON.stringify({
-            model: config.model,
-            messages: buildRequestMessages(config.systemPrompt)
-          })
+          body: JSON.stringify(payload)
         }, 3);
 
         const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         return normalizeAssistantContent(content);
+      }
+
+      function buildRequestPayload(config) {
+        const payload = {
+          model: config.model,
+          messages: buildRequestMessages(config.systemPrompt)
+        };
+
+        addOptionalFloat(payload, "temperature", config.temperature, 0, 2);
+        addOptionalFloat(payload, "top_p", config.topP, 0, 1);
+        addOptionalInteger(payload, "max_tokens", config.maxTokens, 1);
+        addOptionalInteger(payload, "max_completion_tokens", config.maxCompletionTokens, 1);
+
+        if (config.reasoningEffort) {
+          payload.reasoning_effort = config.reasoningEffort;
+        }
+
+        return payload;
+      }
+
+      function addOptionalFloat(target, key, rawValue, min, max) {
+        if (rawValue === "") {
+          return;
+        }
+
+        const value = parseFloat(rawValue);
+        if (!Number.isFinite(value) || value < min || value > max) {
+          return;
+        }
+
+        target[key] = value;
+      }
+
+      function addOptionalInteger(target, key, rawValue, min) {
+        if (rawValue === "") {
+          return;
+        }
+
+        const value = parseInt(rawValue, 10);
+        if (!Number.isFinite(value) || value < min) {
+          return;
+        }
+
+        target[key] = value;
       }
 
       async function fetchJsonWithRetry(url, options, maxRetries) {
