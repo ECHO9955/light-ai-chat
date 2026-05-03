@@ -140,6 +140,24 @@
       box-sizing: border-box;
     }
 
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
     html,
     body {
       height: 100%;
@@ -337,6 +355,8 @@
     }
 
     .topbar {
+      position: relative;
+      z-index: 30;
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto auto;
       gap: 12px;
@@ -382,14 +402,20 @@
     }
 
     .config {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
       display: none;
-      grid-column: 1 / -1;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 16px 12px;
-      max-height: 75vh;
+      max-height: calc(100vh - 100px);
       overflow-y: auto;
-      padding-top: 10px;
-      padding-right: 4px;
+      padding: 16px 18px 120px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--topbar-bg);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
     }
 
     .config.open {
@@ -505,7 +531,7 @@
 
     .field textarea {
       width: 100%;
-      min-height: 140px;
+      min-height: 300px;
       resize: vertical;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -906,7 +932,7 @@
 
       .config {
         grid-template-columns: minmax(0, 1fr);
-        max-height: 75vh;
+        max-height: calc(100vh - 100px);
       }
 
       .chat {
