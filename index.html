@@ -249,7 +249,7 @@
 
     .history-item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 32px;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 6px;
       align-items: center;
       margin-bottom: 6px;
@@ -283,6 +283,41 @@
       white-space: nowrap;
       color: var(--muted);
       font-size: 12px;
+    }
+
+    .history-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .confirm-delete {
+      max-width: 0;
+      height: 26px;
+      opacity: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      border-radius: 6px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 12px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .confirm-delete:hover {
+      border-color: transparent;
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .history-actions.show-confirm .confirm-delete {
+      max-width: 60px;
+      opacity: 1;
+      padding: 0 10px;
+      margin-right: 4px;
     }
 
     .delete-chat {
@@ -1053,6 +1088,15 @@
         } else if (systemThemeQuery.addListener) {
           systemThemeQuery.addListener(handleSystemThemeChange);
         }
+
+        document.addEventListener("click", (event) => {
+          const activeItem = event.target.closest ? event.target.closest(".history-item") : null;
+          document.querySelectorAll(".history-actions.show-confirm").forEach((actions) => {
+            if (!activeItem || !actions.closest(".history-item").contains(activeItem)) {
+              actions.classList.remove("show-confirm");
+            }
+          });
+        });
       }
 
       function applyInitialTheme() {
@@ -1226,6 +1270,15 @@
 
           text.append(title, time);
 
+          const actions = document.createElement("div");
+          actions.className = "history-actions";
+
+          const confirmDelete = document.createElement("button");
+          confirmDelete.className = "confirm-delete";
+          confirmDelete.type = "button";
+          confirmDelete.textContent = "确认";
+          confirmDelete.title = "确认删除";
+
           const del = document.createElement("button");
           del.className = "delete-chat";
           del.type = "button";
@@ -1242,9 +1295,10 @@
           });
           del.addEventListener("click", async (event) => {
             event.stopPropagation();
-            if (!confirm("删除该会话？")) {
-              return;
-            }
+            actions.classList.toggle("show-confirm");
+          });
+          confirmDelete.addEventListener("click", async (event) => {
+            event.stopPropagation();
             await deleteSession(session.id);
             if (session.id === currentSessionId) {
               startNewChat();
@@ -1252,7 +1306,8 @@
             await renderHistory();
           });
 
-          item.append(text, del);
+          actions.append(confirmDelete, del);
+          item.append(text, actions);
           fragment.appendChild(item);
         });
 
