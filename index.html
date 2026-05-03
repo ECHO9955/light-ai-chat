@@ -4,10 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>轻量 AI 对话</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css" media="(prefers-color-scheme: light)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
   <style>
     :root {
-      color-scheme: light;
+      color-scheme: light dark;
       --bg: #f7f7f5;
       --panel: #ffffff;
       --panel-soft: #f0f1ee;
@@ -16,9 +17,78 @@
       --line: #dcded8;
       --accent: #256f5b;
       --accent-dark: #1e5c4b;
+      --accent-text: #ffffff;
       --danger: #b42318;
       --shadow: 0 16px 50px rgba(30, 35, 28, 0.08);
+      --control-bg: #ffffff;
+      --control-hover-bg: #fafbf9;
+      --control-hover-border: #b9beb5;
+      --sidebar-bg: #f1f2ef;
+      --history-hover-bg: #e8ebe6;
+      --history-active-bg: #e2eee9;
+      --history-active-border: #b7d8cd;
+      --topbar-bg: rgba(255, 255, 255, 0.86);
+      --composer-wrap-bg: rgba(255, 255, 255, 0.9);
+      --input-bg: #ffffff;
+      --focus-ring: rgba(37, 111, 91, 0.12);
+      --drag-ring: rgba(37, 111, 91, 0.14);
+      --assistant-dot: #5969a5;
+      --user-message-bg: #e9f3ef;
+      --user-message-border: #c4ddd4;
+      --error-message-bg: #fff5f3;
+      --error-message-border: #f0b8b2;
+      --error-message-text: #7a251d;
+      --message-action-bg: rgba(255, 255, 255, 0.82);
+      --code-bg: #f6f8fa;
+      --code-border: #dde2dc;
+      --inline-code-bg: #edf0ec;
+      --quote-border: #bdc6bb;
+      --quote-text: #4e584c;
+      --image-bg: #ffffff;
+      --mobile-sidebar-shadow: 20px 0 50px rgba(32, 35, 31, 0.16);
       font-family: Inter, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --panel: #171a21;
+        --panel-soft: #20242c;
+        --text: #e8ecf1;
+        --muted: #9aa4b2;
+        --line: #2b313a;
+        --accent: #4fc3a1;
+        --accent-dark: #36a685;
+        --accent-text: #06120f;
+        --danger: #ff6b5f;
+        --shadow: 0 18px 55px rgba(0, 0, 0, 0.42);
+        --control-bg: #1a1e25;
+        --control-hover-bg: #232832;
+        --control-hover-border: #3b4654;
+        --sidebar-bg: #141820;
+        --history-hover-bg: #202631;
+        --history-active-bg: #17362f;
+        --history-active-border: #2f7e67;
+        --topbar-bg: rgba(19, 22, 29, 0.9);
+        --composer-wrap-bg: rgba(19, 22, 29, 0.92);
+        --input-bg: #11141a;
+        --focus-ring: rgba(79, 195, 161, 0.2);
+        --drag-ring: rgba(79, 195, 161, 0.24);
+        --assistant-dot: #8ea2ff;
+        --user-message-bg: #12362e;
+        --user-message-border: #2b8069;
+        --error-message-bg: #351818;
+        --error-message-border: #7d2f2a;
+        --error-message-text: #ffb4ad;
+        --message-action-bg: rgba(26, 30, 37, 0.9);
+        --code-bg: #0d1117;
+        --code-border: #30363d;
+        --inline-code-bg: #242a32;
+        --quote-border: #52606f;
+        --quote-text: #c3cbd6;
+        --image-bg: #11141a;
+        --mobile-sidebar-shadow: 20px 0 55px rgba(0, 0, 0, 0.44);
+      }
     }
 
     * {
@@ -45,7 +115,7 @@
 
     button {
       border: 1px solid var(--line);
-      background: var(--panel);
+      background: var(--control-bg);
       color: var(--text);
       border-radius: 8px;
       cursor: pointer;
@@ -53,8 +123,8 @@
     }
 
     button:hover {
-      border-color: #b9beb5;
-      background: #fafbf9;
+      border-color: var(--control-hover-border);
+      background: var(--control-hover-bg);
     }
 
     button:disabled {
@@ -79,7 +149,7 @@
       min-width: 0;
       overflow: hidden;
       border-right: 1px solid var(--line);
-      background: #f1f2ef;
+      background: var(--sidebar-bg);
       transition: opacity 0.16s ease;
     }
 
@@ -101,7 +171,7 @@
       height: 38px;
       background: var(--accent);
       border-color: var(--accent);
-      color: #fff;
+      color: var(--accent-text);
     }
 
     .new-chat:hover {
@@ -144,12 +214,12 @@
     }
 
     .history-item:hover {
-      background: #e8ebe6;
+      background: var(--history-hover-bg);
     }
 
     .history-item.active {
-      background: #e2eee9;
-      border-color: #b7d8cd;
+      background: var(--history-active-bg);
+      border-color: var(--history-active-border);
     }
 
     .history-title {
@@ -192,7 +262,7 @@
       align-items: center;
       padding: 12px 18px;
       border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.86);
+      background: var(--topbar-bg);
       backdrop-filter: blur(10px);
     }
 
@@ -253,7 +323,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 0 10px;
-      background: #fff;
+      background: var(--input-bg);
       color: var(--text);
       outline: none;
     }
@@ -282,7 +352,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 9px 10px;
-      background: #fff;
+      background: var(--input-bg);
       color: var(--text);
       line-height: 1.5;
       outline: none;
@@ -290,12 +360,12 @@
 
     .field input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 111, 91, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .field textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 111, 91, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .chat {
@@ -347,7 +417,7 @@
     }
 
     .message.assistant .role-dot {
-      background: #5969a5;
+      background: var(--assistant-dot);
     }
 
     .message-content {
@@ -389,7 +459,7 @@
       padding: 0 8px;
       color: var(--muted);
       font-size: 12px;
-      background: rgba(255, 255, 255, 0.82);
+      background: var(--message-action-bg);
     }
 
     .message-action.danger {
@@ -401,8 +471,8 @@
     }
 
     .message.user .message-content {
-      background: #e9f3ef;
-      border-color: #c4ddd4;
+      background: var(--user-message-bg);
+      border-color: var(--user-message-border);
     }
 
     .message.error .role-dot {
@@ -410,9 +480,9 @@
     }
 
     .message.error .message-content {
-      background: #fff5f3;
-      border-color: #f0b8b2;
-      color: #7a251d;
+      background: var(--error-message-bg);
+      border-color: var(--error-message-border);
+      color: var(--error-message-text);
     }
 
     .edit-box {
@@ -429,14 +499,14 @@
       border-radius: 8px;
       padding: 10px;
       color: var(--text);
-      background: #fff;
+      background: var(--input-bg);
       line-height: 1.5;
       outline: none;
     }
 
     .edit-textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 111, 91, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .edit-actions {
@@ -448,7 +518,7 @@
     .edit-save {
       background: var(--accent);
       border-color: var(--accent);
-      color: #fff;
+      color: var(--accent-text);
     }
 
     .edit-save:hover {
@@ -468,8 +538,8 @@
       max-width: 100%;
       overflow-x: auto;
       border-radius: 8px;
-      border: 1px solid #dde2dc;
-      background: #f6f8fa;
+      border: 1px solid var(--code-border);
+      background: var(--code-bg);
     }
 
     .markdown pre code {
@@ -482,15 +552,15 @@
     .markdown code:not(pre code) {
       padding: 2px 5px;
       border-radius: 5px;
-      background: #edf0ec;
+      background: var(--inline-code-bg);
       font-size: 0.92em;
     }
 
     .markdown blockquote {
       margin: 10px 0;
       padding-left: 12px;
-      border-left: 3px solid #bdc6bb;
-      color: #4e584c;
+      border-left: 3px solid var(--quote-border);
+      color: var(--quote-text);
     }
 
     .markdown table {
@@ -519,12 +589,12 @@
       object-fit: cover;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
+      background: var(--image-bg);
     }
 
     .composer-wrap {
       border-top: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--composer-wrap-bg);
       backdrop-filter: blur(10px);
       padding: 14px clamp(14px, 3vw, 34px);
     }
@@ -540,7 +610,7 @@
 
     .composer.dragging {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 111, 91, 0.14), var(--shadow);
+      box-shadow: 0 0 0 3px var(--drag-ring), var(--shadow);
     }
 
     .pending {
@@ -574,7 +644,7 @@
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid var(--line);
-      background: #fff;
+      background: var(--image-bg);
     }
 
     .pending-name {
@@ -590,7 +660,7 @@
       height: 26px;
       padding: 0;
       color: var(--danger);
-      background: #fff;
+      background: var(--control-bg);
     }
 
     .input-row {
@@ -613,7 +683,7 @@
     .send-button {
       background: var(--accent);
       border-color: var(--accent);
-      color: #fff;
+      color: var(--accent-text);
     }
 
     .send-button:hover {
@@ -663,7 +733,7 @@
         z-index: 20;
         inset: 0 auto 0 0;
         width: min(286px, 86vw);
-        box-shadow: 20px 0 50px rgba(32, 35, 31, 0.16);
+        box-shadow: var(--mobile-sidebar-shadow);
       }
 
       .sidebar-collapsed .sidebar {
