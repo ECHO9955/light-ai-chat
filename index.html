@@ -370,6 +370,36 @@
       flex-direction: row-reverse;
     }
 
+    .message-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .message:hover .message-actions,
+    .message:focus-within .message-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .message-action {
+      height: 26px;
+      padding: 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .message-action.danger {
+      color: var(--danger);
+    }
+
+    .message-action:disabled {
+      opacity: 0.45;
+    }
+
     .message.user .message-content {
       background: #e9f3ef;
       border-color: #c4ddd4;
@@ -383,6 +413,47 @@
       background: #fff5f3;
       border-color: #f0b8b2;
       color: #7a251d;
+    }
+
+    .edit-box {
+      display: grid;
+      gap: 8px;
+      width: min(720px, 100%);
+    }
+
+    .edit-textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.5;
+      outline: none;
+    }
+
+    .edit-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 111, 91, 0.12);
+    }
+
+    .edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .edit-save {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .edit-save:hover {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
     }
 
     .markdown > :first-child {
@@ -866,7 +937,7 @@
       }
 
       async function saveCurrentSession() {
-        if (!messages.length) {
+        if (!messages.length && currentTitle === "新对话") {
           return;
         }
 
@@ -1304,15 +1375,15 @@
         }
 
         const fragment = document.createDocumentFragment();
-        messages.forEach((message) => {
-          fragment.appendChild(renderMessage(message));
+        messages.forEach((message, index) => {
+          fragment.appendChild(renderMessage(message, index));
         });
         chatInner.appendChild(fragment);
         highlightCode(chatInner);
         chat.scrollTop = chat.scrollHeight;
       }
 
-      function renderMessage(message) {
+      function renderMessage(message, index) {
         const wrapper = document.createElement("article");
         wrapper.className = "message " + message.role;
 
@@ -1324,7 +1395,26 @@
 
         const role = document.createElement("span");
         role.textContent = message.role === "assistant" ? "AI" : "你";
-        head.append(dot, role);
+
+        const actions = document.createElement("div");
+        actions.className = "message-actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "message-action";
+        editBtn.type = "button";
+        editBtn.textContent = "编辑";
+        editBtn.disabled = isSending;
+        editBtn.addEventListener("click", () => startEditMessage(wrapper, message, index));
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "message-action danger";
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "删除";
+        deleteBtn.disabled = isSending;
+        deleteBtn.addEventListener("click", () => deleteMessage(index));
+
+        actions.append(editBtn, deleteBtn);
+        head.append(dot, role, actions);
 
         const content = document.createElement("div");
         content.className = "message-content";
@@ -1349,6 +1439,90 @@
 
         wrapper.append(head, content);
         return wrapper;
+      }
+
+      async function deleteMessage(index) {
+        if (isSending) {
+          setStatus("请求进行中，暂不能修改历史消息", true);
+          return;
+        }
+        if (!Number.isInteger(index) || index < 0 || index >= messages.length) {
+          return;
+        }
+        if (!confirm("删除这条消息？")) {
+          return;
+        }
+
+        messages.splice(index, 1);
+        await saveCurrentSession();
+        renderMessages();
+        setStatus("消息已删除");
+      }
+
+      function startEditMessage(wrapper, message, index) {
+        if (isSending) {
+          setStatus("请求进行中，暂不能修改历史消息", true);
+          return;
+        }
+        if (!Number.isInteger(index) || index < 0 || index >= messages.length) {
+          return;
+        }
+
+        const oldContent = wrapper.querySelector(".message-content");
+        if (!oldContent) {
+          return;
+        }
+
+        const parsed = parseMessageContent(message.content);
+        const editContent = document.createElement("div");
+        editContent.className = "message-content";
+
+        const box = document.createElement("div");
+        box.className = "edit-box";
+
+        const textarea = document.createElement("textarea");
+        textarea.className = "edit-textarea";
+        textarea.value = parsed.text;
+
+        const actions = document.createElement("div");
+        actions.className = "edit-actions";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "取消";
+        cancelBtn.addEventListener("click", renderMessages);
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "edit-save";
+        saveBtn.textContent = "保存";
+        saveBtn.addEventListener("click", async () => {
+          updateMessageText(index, textarea.value);
+          await saveCurrentSession();
+          renderMessages();
+          setStatus("消息已更新");
+        });
+
+        actions.append(cancelBtn, saveBtn);
+        box.append(textarea, actions);
+        editContent.appendChild(box);
+        oldContent.replaceWith(editContent);
+        textarea.focus();
+      }
+
+      function updateMessageText(index, text) {
+        const message = messages[index];
+        if (!message) {
+          return;
+        }
+
+        if (Array.isArray(message.content)) {
+          const preservedParts = message.content.filter((part) => part && part.type !== "text");
+          message.content = text ? [{ type: "text", text }, ...preservedParts] : preservedParts;
+          return;
+        }
+
+        message.content = text;
       }
 
       function appendErrorMessage(text) {
@@ -1458,6 +1632,9 @@
         sendBtn.disabled = sending;
         promptInput.disabled = sending;
         fileBtn.disabled = sending;
+        document.querySelectorAll(".message-action").forEach((button) => {
+          button.disabled = sending;
+        });
       }
 
       function setStatus(text, isError = false) {
